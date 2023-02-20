@@ -46,7 +46,7 @@ func newMongoConnection() *mongoConnection {
 }
 
 // Get a card
-func (connection *mongoConnection) GetCard(name string) primitive.M {
+func (connection *mongoConnection) GetCardByName(name string) primitive.M {
 	collection := connection.client.Database("MtgAppDatabase").Collection("Card")
 
 	var result bson.M
