@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type CardsController struct {
@@ -32,20 +34,39 @@ func (cc *CardsController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Because we have a collection of over 20000+ cards, we'll need to paginate the responses
 func (cc *CardsController) GetCards(w http.ResponseWriter, r *http.Request) {
-	cursor, err := cc.collection.Find(context.Background(), bson.M{})
+	//Parse the page parameters from the request URL
+	//This accepts jQuery parameters. Example: http://localhost:8080/users?page=2&pageSize=25
+	page, err := strconv.Atoi(r.URL.Query().Get("page"))
 	if err != nil {
-		log.Fatal("Error occured grabbing all cards from the database.")
+		page = 1 //default to page 1 if the query parsing breaks.
+	}
+
+	//Parse the page size parameters from the request URL
+	pageSize, err := strconv.Atoi(r.URL.Query().Get("pagesize"))
+	if err != nil {
+		pageSize = 10 //default to size 10 if the query parsing breaks
+	}
+
+	//Calculate the number of documents to skip based on the page number and page
+	skip := (page - 1) * pageSize
+
+	//Query cards collection with a limit and skip
+	cursor, err := cc.collection.Find(context.Background(), bson.M{}, options.Find().SetLimit(int64(pageSize)).SetSkip(int64(skip)))
+	if err != nil {
+		log.Fatal("Error occured while getting cards from collection.")
 		log.Fatal(err)
 	}
 	defer cursor.Close(context.Background())
 
+	//Iterate over the results and write to the response
 	var cards []bson.M
 	for cursor.Next(context.Background()) {
 		var card bson.M
 		err := cursor.Decode(&card)
 		if err != nil {
-			log.Fatal("Error occured decoding card from collection.")
+			log.Fatal("Error occured while grabbing card.")
 			log.Fatal(err)
 		}
 		cards = append(cards, card)
