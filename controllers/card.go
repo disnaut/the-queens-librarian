@@ -29,7 +29,7 @@ func (cc *CardsController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		//Handle different HTTP methods
 		switch r.Method {
 		case http.MethodGet:
-			cc.GetCards(w, r)
+			cc.SearchCards(w, r)
 		case http.MethodPost:
 			w.WriteHeader(http.StatusNotImplemented)
 		case http.MethodDelete:
@@ -37,10 +37,10 @@ func (cc *CardsController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case http.MethodPut:
 			w.WriteHeader(http.StatusNotImplemented)
 		}
-	} else if r.URL.Path == "/card-search" {
+	} else {
 		switch r.Method {
 		case http.MethodGet:
-			cc.SearchCards(w, r)
+			w.WriteHeader(http.StatusNotImplemented)
 		case http.MethodPost:
 			w.WriteHeader(http.StatusNotImplemented)
 		case http.MethodDelete:
@@ -52,55 +52,12 @@ func (cc *CardsController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // Because we have a collection of over 20000+ cards, we'll need to paginate the responses
-func (cc *CardsController) GetCards(w http.ResponseWriter, r *http.Request) {
-	//Parse the page parameters from the request URL
-	//This accepts jQuery parameters. Example: http://localhost:8080/users?page=2&pageSize=25
-	page, err := strconv.Atoi(r.URL.Query().Get("page"))
-	if err != nil {
-		page = 1 //default to page 1 if the query parsing breaks.
-	}
-
-	//Parse the page size parameters from the request URL
-	pageSize, err := strconv.Atoi(r.URL.Query().Get("pagesize"))
-	if err != nil {
-		pageSize = 10 //default to size 10 if the query parsing breaks
-	}
-
-	//Calculate the number of documents to skip based on the page number and page
-	skip := (page - 1) * pageSize
-
-	//Query cards collection with a limit and skip
-	cursor, err := cc.collection.Find(context.Background(), bson.M{}, options.Find().SetLimit(int64(pageSize)).SetSkip(int64(skip)))
-	if err != nil {
-		log.Fatal("Error occured while getting cards from collection.")
-		log.Fatal(err)
-	}
-	defer cursor.Close(context.Background())
-
-	//Iterate over the results and write to the response
-	var cards []bson.M
-	for cursor.Next(context.Background()) {
-		var card bson.M
-		err := cursor.Decode(&card)
-		if err != nil {
-			log.Fatal("Error occured while grabbing card.")
-			log.Fatal(err)
-		}
-		cards = append(cards, card)
-	}
-	if err := cursor.Err(); err != nil {
-		log.Fatal(err)
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(cards)
-}
-
-// Basic function that accepts search arguments
 func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
 	// Parse Name Parameter
 	name := r.URL.Query().Get("name")
-	// Parse Page Parameters
+
+	//Parse the page parameters from the request URL
+	//This accepts jQuery parameters. Example: http://localhost:8080/users?page=2&pageSize=25
 	page, err := strconv.Atoi(r.URL.Query().Get("page"))
 	if err != nil {
 		page = 1 //default to page 1 if the query parsing breaks.
@@ -121,15 +78,15 @@ func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
 	//Calculate the number of documents to skip based on the page number and page
 	skip := (page - 1) * pageSize
 
-	//Query the cards in the collection with a filter, limit, and skip
+	//Query cards collection with a limit and skip
 	cursor, err := cc.collection.Find(context.Background(), filter, options.Find().SetLimit(int64(pageSize)).SetSkip(int64(skip)))
 	if err != nil {
-		log.Fatal("There was an error with the filtered search.")
+		log.Fatal("Error occured while getting cards from collection.")
 		log.Fatal(err)
 	}
 	defer cursor.Close(context.Background())
 
-	//Loop through cards that were returned
+	//Iterate over the results and write to the response
 	var cards []bson.M
 	for cursor.Next(context.Background()) {
 		var card bson.M
