@@ -1,4 +1,4 @@
-module github.com/the-queens-library/webservice
+module github.com/the-queens-librarian/webAPI
 
 go 1.20
 

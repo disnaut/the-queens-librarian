@@ -8,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/the-queens-library/webservice/controllers"
+	"github.com/the-queens-librarian/webAPI/controllers"
 )
 
 type appContext struct {
