@@ -2,6 +2,8 @@ package controllers
 
 /*
 @TODO: Create function for grabbing page and page size parameters from URL
+@TODO: Update Search Cards to include more search parameters
+@TODO: Learn how to search fields if they are arrays
 */
 import (
 	"context"
