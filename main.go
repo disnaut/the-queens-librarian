@@ -45,7 +45,7 @@ func (appCtx *appContext) cardHandler(w http.ResponseWriter, r *http.Request) {
 	defer client.Disconnect(context.Background())
 
 	//Access the cards collection
-	collection := client.Database("MtgAppDatabase").Collection("Card")
+	collection := client.Database("TheQueensLibrary").Collection("Cards")
 
 	//Use the collection in the cards controller
 	cardController := controllers.NewCardsController(collection)
