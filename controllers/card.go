@@ -55,7 +55,7 @@ func (cc *CardsController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // Because we have a collection of over 20000+ cards, we'll need to paginate the responses
 func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
-	// Parse Name Parameter
+	// Parse Parameters
 	name := r.URL.Query().Get("name")
 	colors := r.URL.Query().Get("colors")
 
@@ -82,7 +82,6 @@ func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
 	colors_query := bson.M{"colors": bson.M{"$regex": colors}}
 
 	//Construct and query
-
 	filter := bson.M{"$and": []bson.M{name_query, colors_query}}
 
 	//Calculate the number of documents to skip based on the page number and page
@@ -108,7 +107,8 @@ func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
 		cards = append(cards, card)
 	}
 	if err := cursor.Err(); err != nil {
-		log.Fatal(err)
+		log.Fatal(err) //Construct and query
+
 	}
 
 	w.Header().Set("Content-Type", "application/json")
