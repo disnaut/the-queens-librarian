@@ -80,13 +80,15 @@ func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
 	//Construct name query
 	name_query := bson.M{"name": pattern}
 
-	//Construct colors query
 	var filter primitive.M
+
+	//If colors exist, add it to the filter
 	if len(colors) != 0 {
 		colors_arr := strings.Split(colors, ",")
 		colors_query := bson.M{"colors": colors_arr}
 		filter = bson.M{"$and": []bson.M{name_query, colors_query}}
 	} else {
+		//Search with name regex
 		filter = name_query
 	}
 
