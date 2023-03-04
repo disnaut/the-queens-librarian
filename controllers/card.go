@@ -57,6 +57,7 @@ func (cc *CardsController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
 	// Parse Name Parameter
 	name := r.URL.Query().Get("name")
+	colors := r.URL.Query().Get("colors")
 
 	//Parse the page parameters from the request URL
 	//This accepts jQuery parameters. Example: http://localhost:8080/users?page=2&pageSize=25
@@ -74,8 +75,15 @@ func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
 	//Create a regex based on the name parameter
 	pattern := bson.M{"$regex": name, "$options": "i"}
 
-	//Construct query
-	filter := bson.M{"name": pattern}
+	//Construct name query
+	name_query := bson.M{"name": pattern}
+
+	//Construct colors query
+	colors_query := bson.M{"colors": bson.M{"$regex": colors}}
+
+	//Construct and query
+
+	filter := bson.M{"$and": []bson.M{name_query, colors_query}}
 
 	//Calculate the number of documents to skip based on the page number and page
 	skip := (page - 1) * pageSize
