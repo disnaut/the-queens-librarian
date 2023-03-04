@@ -11,8 +11,10 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -79,10 +81,16 @@ func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
 	name_query := bson.M{"name": pattern}
 
 	//Construct colors query
-	colors_query := bson.M{"colors": bson.M{"$regex": colors}}
+	var filter primitive.M
+	if len(colors) != 0 {
+		colors_arr := strings.Split(colors, ",")
+		colors_query := bson.M{"colors": colors_arr}
+		filter = bson.M{"$and": []bson.M{name_query, colors_query}}
+	} else {
+		filter = name_query
+	}
 
 	//Construct and query
-	filter := bson.M{"$and": []bson.M{name_query, colors_query}}
 
 	//Calculate the number of documents to skip based on the page number and page
 	skip := (page - 1) * pageSize
