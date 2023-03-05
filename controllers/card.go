@@ -35,11 +35,11 @@ func (cc *CardsController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case http.MethodGet:
 			cc.SearchCards(w, r)
 		case http.MethodPost:
-			w.WriteHeader(http.StatusNotImplemented)
+			w.WriteHeader(http.StatusForbidden)
 		case http.MethodDelete:
 			w.WriteHeader(http.StatusForbidden)
 		case http.MethodPut:
-			w.WriteHeader(http.StatusNotImplemented)
+			w.WriteHeader(http.StatusForbidden)
 		}
 	} else {
 		switch r.Method {
@@ -57,18 +57,15 @@ func (cc *CardsController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // Because we have a collection of over 20000+ cards, we'll need to paginate the responses
 func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
-	// Parse Parameters
+	/* region: Grabbing Query Parameters */
 	name := r.URL.Query().Get("name")
 	colors := r.URL.Query().Get("colors")
 
-	//Parse the page parameters from the request URL
-	//This accepts jQuery parameters. Example: http://localhost:8080/users?page=2&pageSize=25
 	page, err := strconv.Atoi(r.URL.Query().Get("page"))
 	if err != nil {
 		page = 1 //default to page 1 if the query parsing breaks.
 	}
 
-	//Parse the page size parameters from the request URL
 	pageSize, err := strconv.Atoi(r.URL.Query().Get("pagesize"))
 	if err != nil {
 		pageSize = 10 //default to size 10 if the query parsing breaks
@@ -77,28 +74,28 @@ func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
 	//Create a regex based on the name parameter
 	pattern := bson.M{"$regex": name, "$options": "i"}
 
-	//Construct name query
+	//assign regex to name query
 	name_query := bson.M{"name": pattern}
+	/* endregion */
 
-	var filter primitive.M
+	/* region: setting up query */
+	var query primitive.M
 
-	//If colors exist, add it to the filter
 	if len(colors) != 0 {
 		colors_arr := strings.Split(colors, ",")
 		colors_query := bson.M{"colors": colors_arr}
-		filter = bson.M{"$and": []bson.M{name_query, colors_query}}
+		query = bson.M{"$and": []bson.M{name_query, colors_query}}
 	} else {
 		//Search with name regex
-		filter = name_query
+		query = name_query
 	}
-
-	//Construct and query
 
 	//Calculate the number of documents to skip based on the page number and page
 	skip := (page - 1) * pageSize
+	/* endregion */
 
 	//Query cards collection with a limit and skip
-	cursor, err := cc.collection.Find(context.Background(), filter, options.Find().SetLimit(int64(pageSize)).SetSkip(int64(skip)))
+	cursor, err := cc.collection.Find(context.Background(), query, options.Find().SetLimit(int64(pageSize)).SetSkip(int64(skip)))
 	if err != nil {
 		log.Fatal("Error occured while getting cards from collection.")
 		log.Fatal(err)
