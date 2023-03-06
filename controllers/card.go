@@ -50,6 +50,10 @@ func (cc *CardsController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // Because we have a collection of over 20000+ cards, we'll need to paginate the responses
+/*
+This isn't the most efficient way as it grabs EVERYTHING.
+Would be worth looking into getting requests one at a time.
+*/
 func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
 	/* region: Grabbing Query Parameters */
 	name, colors_arr, types, artist, keywords_arr, set, manacost, rarity, page, pageSize := GetQueryParams(r)
