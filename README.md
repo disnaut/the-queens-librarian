@@ -1,8 +1,8 @@
 # the-queens-librarian
 ## Requirements from Client
 - [ ] Robust ability to search for cards
-    - [ ] E.x. being able to search for "Mana Rocks" or "Aristocrats"
     - [ ] Ability for users to create their own colloqulialisms that can then be turned into valid search terms.
+        - E.g. "Power Nine", "Mana Rocks", "Aristocrats"
 - [ ] Ability to catalogue cards as part of a **Personal** collection
 - [ ] Ability to create decks based on various formats
     - [ ] When creating a deck, app will inform the user of what cards they do, and do not, have based on their personal collection.
