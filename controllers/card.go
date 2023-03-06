@@ -71,7 +71,7 @@ func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
 	and = append(and, name_query, artist_query, set_query, types_query)
 	/* endregion */
 
-	/* $and setup for array types */
+	/* $and setup for non regex types */
 	if len(colors_arr) != 0 {
 		colors_query := bson.M{"colors": colors_arr}
 		and = append(and, colors_query)
@@ -82,24 +82,15 @@ func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
 		and = append(and, keywords_query)
 	}
 
-	/*
-		Could use an enum to check if it is one of the given rarities
-		- common
-		- uncommon
-		- rare
-		- mythic rare
-	*/
 	if len(rarity) != 0 {
 		rarity_query := bson.M{"rarity": rarity}
 		and = append(and, rarity_query)
 	}
 
-	/* region: setting up query */
 	query := bson.M{"$and": and}
 
 	//Calculate the number of documents to skip based on the page number and page
 	skip := (page - 1) * pageSize
-	/* endregion */
 
 	//Query cards collection with a limit and skip
 	cursor, err := cc.collection.Find(context.Background(), query, options.Find().SetLimit(int64(pageSize)).SetSkip(int64(skip)))
