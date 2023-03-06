@@ -137,7 +137,7 @@ Parameters that we can get from this:
   - page
   - pagesize
 */
-func GetQueryParams(r *http.Request) (string, []string, string, string, []string, string, int8, string, int, int) {
+func GetQueryParams(r *http.Request) (string, []string, string, string, []string, string, int, string, int, int) {
 	/* Strings */
 	name := r.URL.Query().Get("name")
 	artist := r.URL.Query().Get("artist")
@@ -176,5 +176,5 @@ func GetQueryParams(r *http.Request) (string, []string, string, string, []string
 		pageSize = 10 //default to size 10 if the query parsing breaks
 	}
 
-	return name, colors_arr, types, artist, keywords_arr, set, int8(manacost), rarity, page, pageSize
+	return name, colors_arr, types, artist, keywords_arr, set, manacost, rarity, page, pageSize
 }
