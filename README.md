@@ -2,12 +2,12 @@
 ## Requirements from Client
 - [ ] Robust ability to search for cards
     - [ ] Manacost
-    - [ X ] Colors
-    - [ X ] Types
-    - [ X ] Keywords
-    - [ X ] Rarity
-    - [ X ] Name
-    - [ X ] Artist
+    - [X] Colors
+    - [X] Types
+    - [X] Keywords
+    - [X] Rarity
+    - [X] Name
+    - [X] Artist
 - [ ] Ability for users to create their own colloqulialisms that can then be turned into valid search terms.
     - E.g. "Power Nine", "Mana Rocks", "Aristocrats"
 - [ ] Ability to catalogue cards as part of a **Personal** collection
