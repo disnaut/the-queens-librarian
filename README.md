@@ -12,8 +12,8 @@
     - E.g. "Power Nine", "Mana Rocks", "Aristocrats"
 - [ ] Ability to catalogue cards as part of a **Personal** collection
 - [ ] Ability to create decks based on various formats
-    - [ ] When creating a deck, app will inform the user of what cards they do, and do not, have based on their personal collection.
-    - [ ] (Optional) Update pricing information to give the user an estimate of how much the rest of a deck would cost
+- [ ] When creating a deck, app will inform the user of what cards they do, and do not, have based on their personal collection.
+- [ ] Update pricing information to give the user an estimate of how much the rest of a deck would cost
 **Requirements Subject To Change**
 
 
