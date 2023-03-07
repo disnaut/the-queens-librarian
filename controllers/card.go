@@ -59,7 +59,7 @@ func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
 	name, colors_arr, types, artist, keywords_arr, set, manacost, rarity, page, pageSize := GetQueryParams(r)
 
 	println(manacost) //To keep manacost available while options are considered for what can be done.
-	var and []bson.M
+	var query_collection []bson.M
 	//Create a regex based on certain params
 	name_pattern := bson.M{"$regex": name, "$options": "i"}
 	artist_pattern := bson.M{"$regex": artist, "$options": "i"}
@@ -72,27 +72,26 @@ func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
 	set_query := bson.M{"set_name": set_pattern}
 	types_query := bson.M{"type_line": types_pattern}
 
-	and = append(and, name_query, artist_query, set_query, types_query)
+	query_collection = append(query_collection, name_query, artist_query, set_query, types_query)
 	/* endregion */
 
 	/* $and setup for non regex types */
 	if len(colors_arr) != 0 {
 		colors_query := bson.M{"colors": colors_arr}
-		and = append(and, colors_query)
+		query_collection = append(query_collection, colors_query)
 	}
 
 	if len(keywords_arr) != 0 {
 		keywords_query := bson.M{"keywords": keywords_arr}
-		and = append(and, keywords_query)
+		query_collection = append(query_collection, keywords_query)
 	}
 
 	if len(rarity) != 0 {
 		rarity_query := bson.M{"rarity": rarity}
-		and = append(and, rarity_query)
+		query_collection = append(query_collection, rarity_query)
 	}
 
-	query := bson.M{"$and": and}
-
+	query := bson.M{"$and": query_collection}
 	//Calculate the number of documents to skip based on the page number and page
 	skip := (page - 1) * pageSize
 
@@ -165,6 +164,9 @@ func GetQueryParams(r *http.Request) (string, []string, string, string, []string
 	}
 
 	/* Numbers */
+	// This can be moved up, because we need to split the comparison
+	// from the number so we know which way we need to grab certain
+	// things.
 	manacost, err := strconv.Atoi(r.URL.Query().Get("manacost"))
 	if err != nil {
 		manacost = -1
