@@ -21,14 +21,15 @@ func NewCardsController(collection *mongo.Collection) *CardsController {
 }
 
 type CardQueryParams struct {
-	name     string
-	colors   []string
-	cardType string
-	artist   string
-	keywords []string
-	set      string
-	mana     string
-	rarity   string
+	name        string
+	colors      []string
+	cardType    string
+	artist      string
+	keywords    []string
+	set         string
+	mana        int
+	manaCompare string
+	rarity      string
 }
 
 func (cc *CardsController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -61,58 +62,46 @@ func (cc *CardsController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
 	var cardQuery CardQueryParams
-	var query_collection []bson.M
+	var queryCollection []bson.M
 
 	GetQueryParams(r, &cardQuery)
 
-	name_pattern := bson.M{"$regex": cardQuery.name, "$options": "i"}
-	artist_pattern := bson.M{"$regex": cardQuery.artist, "$options": "i"}
-	set_pattern := bson.M{"$regex": cardQuery.set, "$options": "i"}
-	types_pattern := bson.M{"$regex": cardQuery.cardType, "$options": "i"}
+	nameRegex := bson.M{"$regex": cardQuery.name, "$options": "i"}
+	artistRegex := bson.M{"$regex": cardQuery.artist, "$options": "i"}
+	setRegex := bson.M{"$regex": cardQuery.set, "$options": "i"}
+	cardTypesRegex := bson.M{"$regex": cardQuery.cardType, "$options": "i"}
 
 	//assign regex patterns to respective parts of the query
-	name := bson.M{"name": name_pattern}
-	artist := bson.M{"artist": artist_pattern}
-	set := bson.M{"set_name": set_pattern}
-	card_types := bson.M{"type_line": types_pattern}
+	name := bson.M{"name": nameRegex}
+	artist := bson.M{"artist": artistRegex}
+	set := bson.M{"set_name": setRegex}
+	cardTypes := bson.M{"type_line": cardTypesRegex}
 
-	query_collection = append(query_collection, name, artist, set, card_types)
+	queryCollection = append(queryCollection, name, artist, set, cardTypes)
 
 	/* $and setup for non regex types */
 	if len(cardQuery.colors) != 0 {
 		colors := bson.M{"colors": cardQuery.colors}
-		query_collection = append(query_collection, colors)
+		queryCollection = append(queryCollection, colors)
 	}
 
 	if len(cardQuery.keywords) != 0 {
 		keywords := bson.M{"keywords": cardQuery.keywords}
-		query_collection = append(query_collection, keywords)
+		queryCollection = append(queryCollection, keywords)
 	}
 
 	if len(cardQuery.rarity) != 0 {
 		rarity := bson.M{"rarity": cardQuery.rarity}
-		query_collection = append(query_collection, rarity)
+		queryCollection = append(queryCollection, rarity)
 	}
 
-	if len(cardQuery.mana) != 0 {
-		mana := strings.Split(cardQuery.mana, "=")
-		cmc, _ := strconv.Atoi(mana[1])
-		var manaQuery bson.M
-		if len(mana) == 0 {
-			manaQuery = bson.M{"cmc": cmc}
-		} else {
-			if mana[1] == ">" {
-				gte := bson.M{"$gte": cmc}
-				manaQuery = bson.M{"cmc": gte}
-			} else {
-				lte := bson.M{"lte": cmc}
-				manaQuery = bson.M{"cmc": lte}
-			}
-		}
-		query_collection = append(query_collection, manaQuery)
+	if len(cardQuery.manaCompare) != 0 {
+		manaCompare := bson.M{cardQuery.manaCompare: cardQuery.mana}
+		mana := bson.M{"cmc": manaCompare}
+		queryCollection = append(queryCollection, mana)
 	}
 
-	query := bson.M{"$and": query_collection}
+	query := bson.M{"$and": queryCollection}
 
 	cursor, err := cc.collection.Find(context.Background(), query)
 	if err != nil {
@@ -146,7 +135,6 @@ func GetQueryParams(r *http.Request, card *CardQueryParams) {
 	card.set = r.URL.Query().Get("set")
 	card.rarity = r.URL.Query().Get("rarity")
 	card.cardType = r.URL.Query().Get("types")
-	card.mana = r.URL.Query().Get("manaCost")
 
 	/* Arrays */
 	colors := r.URL.Query().Get("colors")
@@ -158,5 +146,28 @@ func GetQueryParams(r *http.Request, card *CardQueryParams) {
 
 	if len(keywords) != 0 {
 		card.keywords = strings.Split(keywords, ",")
+	}
+
+	manaParam := r.URL.Query().Get("mana")
+	if len(manaParam) != 0 {
+		if strings.HasPrefix(manaParam, "lte") {
+			manaParam, _ = strings.CutPrefix(manaParam, "lte")
+			card.mana, _ = strconv.Atoi(manaParam)
+			card.manaCompare = "$lte"
+		} else if strings.HasPrefix(manaParam, "gte") {
+			manaParam, _ = strings.CutPrefix(manaParam, "gte")
+			card.mana, _ = strconv.Atoi(manaParam)
+			card.manaCompare = "$gte"
+		} else {
+			var err error
+			card.mana, err = strconv.Atoi(manaParam)
+			if err != nil {
+				log.Panicln(err)
+				card.mana = -1
+				card.manaCompare = "$gte"
+			} else {
+				card.manaCompare = "$eq"
+			}
+		}
 	}
 }
