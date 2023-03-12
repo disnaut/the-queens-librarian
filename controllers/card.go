@@ -1,16 +1,11 @@
 package controllers
 
-/*
-TODO: Get manacost up and running
-TODO: Change out query param variables to pointers
-TODO: Update the response to multiple http requests one after another rather than array
-*/
-
 import (
 	"context"
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -64,52 +59,61 @@ func (cc *CardsController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Because we have a collection of over 20000+ cards, we'll need to paginate the responses
-/*
-This isn't the most efficient way as it grabs EVERYTHING.
-Would be worth looking into getting requests one at a time.
-*/
 func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
-	/* region: Grabbing Query Parameters */
 	var cardQuery CardQueryParams
+	var query_collection []bson.M
 
 	GetQueryParams(r, &cardQuery)
 
-	var query_collection []bson.M
-	//Create a regex based on certain params
 	name_pattern := bson.M{"$regex": cardQuery.name, "$options": "i"}
 	artist_pattern := bson.M{"$regex": cardQuery.artist, "$options": "i"}
 	set_pattern := bson.M{"$regex": cardQuery.set, "$options": "i"}
-	types_pattern := bson.M{"$regex": cardQuery.cardType, "$options": "i"} //Change to regular query, something like only Artifacts. No solution for if multiple types are wanted in the query
+	types_pattern := bson.M{"$regex": cardQuery.cardType, "$options": "i"}
 
-	//assign regex patterns to respective queries
-	name_query := bson.M{"name": name_pattern}
-	artist_query := bson.M{"artist": artist_pattern}
-	set_query := bson.M{"set_name": set_pattern}
-	types_query := bson.M{"type_line": types_pattern}
+	//assign regex patterns to respective parts of the query
+	name := bson.M{"name": name_pattern}
+	artist := bson.M{"artist": artist_pattern}
+	set := bson.M{"set_name": set_pattern}
+	card_types := bson.M{"type_line": types_pattern}
 
-	query_collection = append(query_collection, name_query, artist_query, set_query, types_query)
+	query_collection = append(query_collection, name, artist, set, card_types)
 
 	/* $and setup for non regex types */
 	if len(cardQuery.colors) != 0 {
-		colors_query := bson.M{"colors": cardQuery.colors}
-		query_collection = append(query_collection, colors_query)
+		colors := bson.M{"colors": cardQuery.colors}
+		query_collection = append(query_collection, colors)
 	}
 
 	if len(cardQuery.keywords) != 0 {
-		keywords_query := bson.M{"keywords": cardQuery.keywords}
-		query_collection = append(query_collection, keywords_query)
+		keywords := bson.M{"keywords": cardQuery.keywords}
+		query_collection = append(query_collection, keywords)
 	}
 
 	if len(cardQuery.rarity) != 0 {
-		rarity_query := bson.M{"rarity": cardQuery.rarity}
-		query_collection = append(query_collection, rarity_query)
+		rarity := bson.M{"rarity": cardQuery.rarity}
+		query_collection = append(query_collection, rarity)
 	}
 
-	query := bson.M{"$and": query_collection} //Potentially figure out a way to handle an or statement.w
-	//Calculate the number of documents to skip based on the page number and page
+	if len(cardQuery.mana) != 0 {
+		mana := strings.Split(cardQuery.mana, "=")
+		cmc, _ := strconv.Atoi(mana[1])
+		var manaQuery bson.M
+		if len(mana) == 0 {
+			manaQuery = bson.M{"cmc": cmc}
+		} else {
+			if mana[1] == ">" {
+				gte := bson.M{"$gte": cmc}
+				manaQuery = bson.M{"cmc": gte}
+			} else {
+				lte := bson.M{"lte": cmc}
+				manaQuery = bson.M{"cmc": lte}
+			}
+		}
+		query_collection = append(query_collection, manaQuery)
+	}
 
-	//Query cards collection with a limit and skip
+	query := bson.M{"$and": query_collection}
+
 	cursor, err := cc.collection.Find(context.Background(), query)
 	if err != nil {
 		log.Fatal("Error occured while getting cards from collection.")
@@ -135,24 +139,24 @@ func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetQueryParams(r *http.Request, cardPtr *CardQueryParams) {
+func GetQueryParams(r *http.Request, card *CardQueryParams) {
 	/* Strings */
-	*&cardPtr.name = r.URL.Query().Get("name")
-	*&cardPtr.artist = r.URL.Query().Get("artist")
-	*&cardPtr.set = r.URL.Query().Get("set")
-	*&cardPtr.rarity = r.URL.Query().Get("rarity")
-	*&cardPtr.cardType = r.URL.Query().Get("types")
-	*&cardPtr.mana = r.URL.Query().Get("manaCost")
+	card.name = r.URL.Query().Get("name")
+	card.artist = r.URL.Query().Get("artist")
+	card.set = r.URL.Query().Get("set")
+	card.rarity = r.URL.Query().Get("rarity")
+	card.cardType = r.URL.Query().Get("types")
+	card.mana = r.URL.Query().Get("manaCost")
 
 	/* Arrays */
 	colors := r.URL.Query().Get("colors")
 	keywords := r.URL.Query().Get("keywords")
 
 	if len(colors) != 0 {
-		*&cardPtr.colors = strings.Split(colors, ",")
+		card.colors = strings.Split(colors, ",")
 	}
 
 	if len(keywords) != 0 {
-		*&cardPtr.keywords = strings.Split(keywords, ",")
+		card.keywords = strings.Split(keywords, ",")
 	}
 }
