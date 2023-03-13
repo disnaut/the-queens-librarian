@@ -129,6 +129,7 @@ func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cc *CardsController) UpdateCollection(w http.ResponseWriter, r *http.Request) {
+	// IMPORTANT: We need to make sure that collection and amount exist as fields.
 	// First, we grab parameters which would be the following
 	//		- Card ID
 	//		- Amount of card
