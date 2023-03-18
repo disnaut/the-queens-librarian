@@ -46,18 +46,7 @@ func (cc *CardsController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case http.MethodPut:
 			w.WriteHeader(http.StatusForbidden)
 		}
-	} else {
-		switch r.Method {
-		case http.MethodGet:
-			w.WriteHeader(http.StatusNotImplemented)
-		case http.MethodPost:
-			w.WriteHeader(http.StatusNotImplemented)
-		case http.MethodDelete:
-			w.WriteHeader(http.StatusNotImplemented)
-		case http.MethodPut:
-			w.WriteHeader(http.StatusNotImplemented)
-		}
-	}
+    }
 }
 
 func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
@@ -126,22 +115,6 @@ func (cc *CardsController) SearchCards(w http.ResponseWriter, r *http.Request) {
 	if err := cursor.Err(); err != nil {
 		log.Fatal(err) //Construct and query
 	}
-}
-
-func (cc *CardsController) UpdateCollection(w http.ResponseWriter, r *http.Request) {
-	// IMPORTANT: We need to make sure that collection and amount exist as fields.
-	// First, we grab parameters which would be the following
-	//		- Card ID
-	//		- Amount of card
-	// These parameters would be gotten via a json payload that is an array of objects those members would be the parameters stated above
-	// Second, Decode the JSON into an array we can access.
-	// Third, get a connection to TheQueensLibrary, and the Collection of Cards
-	// Forth, Loop through the JSON array and do the following operations:
-	//		- Get the card data from the database.
-	//		- Check if the 'collection field is false'
-	//			- if false, then set to true
-	//		- Update amount to be the amount of card
-	// 		- Loop until every card is updated
 }
 
 func GetQueryParams(r *http.Request, card *CardQueryParams) {
