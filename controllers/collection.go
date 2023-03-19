@@ -75,7 +75,7 @@ func (cc *CollectionController) AddToCollection(w http.ResponseWriter,
         http.Error(w, err.Error(), http.StatusInternalServerError)
     }
 
-    fmt.Fprint(w, "Inserted %v documents.", len(result.InsertedIDs))
+    fmt.Fprint(w, "Inserted %v documents.",len(result.InsertedIDs))
 }
 
 func (cc *CollectionController) RemoveFromCollection(w http.ResponseWriter, 
