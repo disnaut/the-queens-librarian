@@ -73,8 +73,8 @@ func (appCtx *appContext) CardHandler(w http.ResponseWriter, r *http.Request) {
 	collection := client.Database("TheQueensLibrary").Collection("Cards")
 
 	//Use the collection in the cards controller
-	cardController := controllers.NewCardsController(collection)
+	searchController := controllers.NewSearchController(collection)
 
 	//Handle the request using the card controller
-	cardController.ServeHTTP(w, r)
+	searchController.ServeHTTP(w, r)
 }
