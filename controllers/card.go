@@ -7,9 +7,12 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
+	"runtime"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 //Could be CardCore - Kirk
@@ -54,10 +57,8 @@ func (cc *SearchController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-// Use GoByExample
 // Try to implement one thing of concurrency with weight groups
-// Use an interface if I can
-// 900 bucks for a course called Arden Labs
+// 900 bucks for a course from Arden Labs
 // THIS IS WORTH IT.
 // Arden Labs -> Have Youtube videos, and could learn this freely.
 // Refactor, Decouple
@@ -66,32 +67,66 @@ func (cc *SearchController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // searchCards will grab cards from mongodb based on jQuery arguments
 func (cc *SearchController) searchCards(w http.ResponseWriter, r *http.Request) {
 	var cardQuery CardQueryParams
-	
-	parseUrl(r, &cardQuery)
-    query := createQuery(cardQuery)
 
-	cursor, err := cc.collection.Find(context.Background(), query)
+	parseUrl(r, &cardQuery)
+	query := createQuery(cardQuery)
+
+	opts := options.Find().SetSort(bson.D{{"name", 1}})
+
+	cursor, err := cc.collection.Find(context.Background(), query, opts)
 	if err != nil {
 		log.Fatal("Error occured while getting cards from collection.")
 		log.Fatal(err)
 	}
 	defer cursor.Close(context.Background())
 
-	//Iterate over the results and write to the response
-	var card bson.M
+	// Create a channel to receive the results
+	results := make(chan bson.M)
+
+	// Read all collections into a queue
+	var collectionQueue []bson.M
 	for cursor.Next(context.Background()) {
+		var card bson.M
 		err := cursor.Decode(&card)
 		if err != nil {
 			log.Fatal("Error occured while grabbing card.")
 			log.Fatal(err)
 		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(card)
-		w.(http.Flusher).Flush()
+		collectionQueue = append(collectionQueue, card)
 	}
+
+    var mu sync.Mutex
+
+	// Spawn a pool of worker goroutines to process the results in parallel
+	numWorkers := runtime.NumCPU()
+	wg := sync.WaitGroup{}
+	wg.Add(numWorkers)
+	for i := 0; i < numWorkers; i++ {
+		go func() {
+			defer wg.Done()
+			for card := range results {
+                mu.Lock()
+				w.Header().Set("Content-Type", "application/json")
+				err := json.NewEncoder(w).Encode(card)
+				if err != nil {
+					log.Fatal("Error occured while encoding card to JSON.")
+					log.Fatal(err)
+				}
+				w.(http.Flusher).Flush()
+                mu.Unlock()
+			}
+		}()
+	}
+
+	// Send out HTTP responses using wait groups
+	for _, card := range collectionQueue {
+		results <- card
+	}
+	close(results)
+	wg.Wait()
+
 	if err := cursor.Err(); err != nil {
-		log.Fatal(err) //Construct and query
+		log.Fatal(err)
 	}
 }
 
