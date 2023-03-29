@@ -101,7 +101,9 @@ func (cc *SearchController) searchCards(w http.ResponseWriter, r *http.Request) 
 	numWorkers := runtime.NumCPU()
 	wg := sync.WaitGroup{}
 	wg.Add(numWorkers)
-	for i := 0; i < numWorkers; i++ {
+	
+    // Create a pool of workers and get cards from db
+    for i := 0; i < numWorkers; i++ {
 		go func() {
 			defer wg.Done()
 			for card := range results {
