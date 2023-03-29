@@ -1,7 +1,7 @@
 # the-queens-librarian
 ## Requirements from Client
 - [ ] Robust ability to search for cards
-    - [ ] Manacost
+    - [X] Manacost
     - [X] Colors
     - [X] Types
     - [X] Keywords
