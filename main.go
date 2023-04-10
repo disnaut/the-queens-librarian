@@ -47,7 +47,7 @@ func (appCtx *appContext) CollectionHandler(w http.ResponseWriter, r *http.Reque
     collection := client.Database("TheQueensLibrary").Collection("Collection")
 
     collectionController := controllers.NewCollectionController(collection)
-
+    
     collectionController.ServeHTTP(w, r)
 
 }
@@ -60,7 +60,8 @@ func (appCtx *appContext) CardHandler(w http.ResponseWriter, r *http.Request) {
 		log.Fatal("Something went wrong creating the mongo client.")
 		log.Fatal(err)
 	}
-
+    
+    w.Header().Set("Access-Control-Allow-Origin", "*")
 	err = client.Connect(context.Background())
 	if err != nil {
 		log.Fatal("Something went wrong connecting to the client.")
