@@ -7,10 +7,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
-	"runtime"
 
-	"go.mongodb.org/mongo-driver/bson"
+    "go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -64,6 +62,7 @@ func (cc *SearchController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // Refactor, Decouple
 
 // Private function
+// searchCards performs the search for cards based on the query parameters
 // searchCards will grab cards from mongodb based on jQuery arguments
 func (cc *SearchController) searchCards(w http.ResponseWriter, r *http.Request) {
 	var cardQuery CardQueryParams
@@ -80,58 +79,29 @@ func (cc *SearchController) searchCards(w http.ResponseWriter, r *http.Request) 
 	}
 	defer cursor.Close(context.Background())
 
-	// Create a channel to receive the results
-	results := make(chan bson.M)
+    // Create a slice to store the cords
+    var cards []bson.M
 
-	// Read all collections into a queue
-	var collectionQueue []bson.M
+	//Iterate over the results and write to the response
 	for cursor.Next(context.Background()) {
-		var card bson.M
+	    var card bson.M
 		err := cursor.Decode(&card)
 		if err != nil {
 			log.Fatal("Error occured while grabbing card.")
 			log.Fatal(err)
 		}
-		collectionQueue = append(collectionQueue, card)
+
+        cards = append(cards, card)
+
 	}
 
-    var mu sync.Mutex
-
-	// Spawn a pool of worker goroutines to process the results in parallel
-	numWorkers := runtime.NumCPU()
-	wg := sync.WaitGroup{}
-	wg.Add(numWorkers)
-	
-    // Create a pool of workers and get cards from db
-    for i := 0; i < numWorkers; i++ {
-		go func() {
-			defer wg.Done()
-			for card := range results {
-                mu.Lock()
-				w.Header().Set("Content-Type", "application/json")
-				err := json.NewEncoder(w).Encode(card)
-				if err != nil {
-					log.Fatal("Error occured while encoding card to JSON.")
-					log.Fatal(err)
-				}
-				w.(http.Flusher).Flush()
-                mu.Unlock()
-			}
-		}()
-	}
-
-	// Send out HTTP responses using wait groups
-	for _, card := range collectionQueue {
-		results <- card
-	}
-	close(results)
-	wg.Wait()
-
-	if err := cursor.Err(); err != nil {
-		log.Fatal(err)
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(cards)
+    w.(http.Flusher).Flush()
+    if err := cursor.Err(); err != nil {
+		log.Fatal(err) //Construct and query
 	}
 }
-
 // Private Function
 // CreateQuery creates a query based jQuery arguments
 // that are parsed within this function
