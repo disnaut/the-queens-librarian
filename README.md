@@ -15,6 +15,11 @@
 - [ ] When creating a deck, app will inform the user of what cards they do, and do not, have based on their personal collection.
 - [ ] Update pricing information to give the user an estimate of how much the rest of a deck would cost
 **Requirements Subject To Change**
+# Current Happenings
+- Currently working Unit Tests for what is currently implemented
+- Working on getting a "set up" guide working
+- Working on getting a .config file working
+- Working on re-factoring the Card.go to utilize go routines
 
 
 ## 02/19/2023
